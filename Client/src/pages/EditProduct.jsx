@@ -1,0 +1,90 @@
+ import React, { useState } from 'react';
+import {
+  Box, Button, TextField, Typography, InputLabel, MenuItem, FormControl, Select
+} from '@mui/material';
+import { useDispatch } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { updateProductThunk } from '../redux/product/product.think';
+
+const categoryOptions = ['fashion', 'electronics', 'home & kitchen', 'health & beauty'];
+
+const EditProduct = () => {
+  const location = useLocation();
+  const navigate=useNavigate()
+  const product = location.state?.product || {};
+  console.log("Product to edit:", product);
+  const dispatch = useDispatch();
+
+  const [form, setForm] = useState({
+    name: product.name || '',
+    price: product.price || '',
+    discount: product.discount || '',
+    description: product.description || '',
+    category: product.category || '',  
+    image: null,
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    setForm((prev) => ({ ...prev, image: e.target.files[0] }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("name", form.name);
+    formData.append("price", form.price);
+    formData.append("discount", form.discount || 0);
+    formData.append("description", form.description);
+    formData.append("category", form.category);
+    if (form.image) formData.append("image", form.image);
+
+   const response= await dispatch(updateProductThunk({ id: product._id, formData }));
+  if(response?.payload?.success){
+navigate("/admin/product")
+  }
+  };
+
+  return (
+    <Box maxWidth={500} mx="auto" mt={5} p={3} boxShadow={3} borderRadius={2} bgcolor="#fff">
+      <Typography variant="h5" mb={2} align="center">Edit Product</Typography>
+      <form onSubmit={handleSubmit} encType='multipart/form-data'>
+        <TextField label="Product Name" name="name" value={form.name} onChange={handleChange} fullWidth margin="normal" required />
+        <TextField label="Price" name="price" type="number" value={form.price} onChange={handleChange} fullWidth margin="normal" required />
+        <TextField label="Discount (%)" name="discount" type="number" value={form.discount} onChange={handleChange} fullWidth margin="normal" />
+        <TextField label="Description" name="description" value={form.description} onChange={handleChange} fullWidth margin="normal" multiline rows={3} />
+        
+        <FormControl fullWidth margin="normal" required>
+          <InputLabel id="category-label">Category</InputLabel>
+          <Select
+            labelId="category-label"
+            name="category"
+            value={form.category}
+            label="Category"
+            onChange={handleChange}
+          >
+            <MenuItem value="" disabled>
+              <em style={{ color: 'gray' }}>Select category</em>
+            </MenuItem>
+            {categoryOptions.map((cat) => (
+              <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Button variant="contained" component="label" fullWidth sx={{ mt: 2 }}>
+          Upload New Image
+          <input type="file" accept="image/*" hidden onChange={handleImageChange} />
+        </Button>
+        {form.image && <Typography variant="body2" mt={1} color="text.secondary">Selected: {form.image.name}</Typography>}
+        <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3 }}>Update Product</Button>
+      </form>
+    </Box>
+  );
+};
+
+export default EditProduct;
